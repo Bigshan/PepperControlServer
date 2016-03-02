@@ -15,7 +15,7 @@
             <BehaviorLayer name="behavior_layer1">
                 <BehaviorKeyframe name="keyframe1" index="1">
                     <Diagram>
-                        <Box name="PepperControlServer" id="2" localization="8" tooltip="version 1.0" x="159" y="375">
+                        <Box name="PepperControlServer" id="2" localization="8" tooltip="version 1.0" x="210" y="140">
                             <bitmap>media/images/box/box-diagram.png</bitmap>
                             <script language="4">
                                 <content>
@@ -93,16 +93,10 @@ class MyClass(GeneratedClass):
             pass
     def sendBehaviorMsg(self):
         header = "BehaviorRes"
+        defaultList = self.managerProxy.getDefaultBehaviors()
         behaviorList = self.managerProxy.getInstalledBehaviors()
         runingList = self.managerProxy.getRunningBehaviors()
-        runingBehaviors = ""
-        installBehaviors = ""
-        for i in runingList:
-            i = i.rstrip("/.")
-            runingBehaviors += i
-            runingBehaviors += "$"
-            if len(runingBehaviors) >3900:
-                    break
+        behaviors = ""
         for i in behaviorList:
             if i.count(".currentChoregrapheBehavior"):
                 pass
@@ -117,17 +111,26 @@ class MyClass(GeneratedClass):
             elif i.count("diagnostic"):
                 pass
             else:
-                installBehaviors += i
-                installBehaviors += "$"
-                if len(installBehaviors) >3900:
+                isDefault = "N"
+                isRuning = "N"
+                if defaultList.count(i):
+                    isDefault = "Y"
+                if runingList.count(i):
+                    isRuning = "Y"
+                i += isDefault
+                i += isRuning
+                behaviors += i
+                behaviors += "$"
+                if len(behaviors) >7900:
                     break
-        robotInfo = struct.pack('!15s4000s4000s',header,runingBehaviors,installBehaviors)
+        robotInfo = struct.pack('!15s8000s',header,behaviors)
         self.sock.sendto(robotInfo,(self.addr, self.port))
     def sendSettingsMsg(self):
         header = "SettingsRes"
         supportLanguage = ""
         isHighVersion = 0
         robotName = ""
+        stiffness = 0
         try:
             volume = self.audio.getOutputVolume()
             isRobotics = 1
@@ -137,8 +140,9 @@ class MyClass(GeneratedClass):
         if(isRobotics == 1):
             try:
                 volume = self.audio.getOutputVolume()
-                info = self.motion.getStiffnesses("Body")
-                stiffness = info[0]
+                isWakeUp = self.motion.robotIsWakeUp()
+                if isWakeUp:
+                    stiffness = 1
             except :
                 volume = 0
                 stiffness = 0
@@ -332,7 +336,7 @@ class MyClass(GeneratedClass):
             walkY = walkY/167772160.0
             theta = theta/167772160.0
             frequency = frequency/167772160.0
-            self.motion.setWalkTargetVelocity(walkX,walkY,theta,frequency)
+            self.motion.moveToward(walkX,walkY,theta, [["Frequency", frequency]])
         elif(self.msg.startswith('HeadMsg',0,16)):
             header,walkX,walkY,theta,frequency = struct.unpack("!16s4i",self.msg)
             walkX = walkX/167772160.0
@@ -364,7 +368,10 @@ class MyClass(GeneratedClass):
             body = self.getString(info2)
             value = self.getString(info3)
             if(body == "Stiffness"):
-                self.motion.post.stiffnessInterpolation("Body",float(value)/10.0, 0.1)
+                if (float(value) > 0):
+                    self.motion.wakeUp()
+                else:
+                    self.motion.rest()
             elif(body == "Volume"):
                 try:
                     audio = ALProxy("ALAudioDevice")
