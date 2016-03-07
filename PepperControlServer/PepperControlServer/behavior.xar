@@ -83,11 +83,11 @@ class MyClass(GeneratedClass):
                 self.sendSettingsMsg()
         elif self.msg == "ConfigON":
             self.config = True
-            self.memory.insertData("Selected",1)
+            self.memory.insertData("PepperControlSelected",1)
             self.output(1)
         elif self.msg == "ConfigOFF":
             self.config = False
-            self.memory.insertData("Selected",0)
+            self.memory.insertData("PepperControlSelected",0)
             self.output(0)
         else:
             pass
@@ -224,7 +224,7 @@ class MyClass(GeneratedClass):
         self.sock.close()
     def onInput_onStart(self):
         self.stopTimelineParent()
-        self.memory.insertData("Selected",0)
+        self.memory.insertData("PepperControlSelected",0)
         self.startSocket()
         while(self.bstart):
             try:
@@ -251,6 +251,7 @@ class MyClass(GeneratedClass):
         header = "OnlineRes"
         name = " "
         version = " "
+        behaviorVersion = 10
         try:
             volume = self.audio.getOutputVolume()
             isRobotics = 1
@@ -258,21 +259,13 @@ class MyClass(GeneratedClass):
             isRobotics = 0
         if(isRobotics == 1):
             try:
-                info = self.motion.getStiffnesses("Body")
-                stiffness = info[0]
-            except :
-                stiffness = 0
-            try:
                 system = ALProxy("ALSystem")
                 name = system.robotName()
                 version = system.systemVersion()
             except :
                 pass
-
-        else:
-            stiffness = 0
-        isSelected = self.memory.getData("Selected")
-        robotInfo = struct.pack('!15s20s10s3h',header,name,version,isRobotics,stiffness,isSelected)
+        isSelected = self.memory.getData("PepperControlSelected")
+        robotInfo = struct.pack('!15s20s10s3h',header,name,version,isRobotics,behaviorVersion,isSelected)
         self.sock.sendto(robotInfo,(self.addr, self.port))]]>
 </content>
                                                 </script>
@@ -436,6 +429,10 @@ class MyClass(GeneratedClass):
                 time.sleep(1.0)
                 if (targetIP != "255.255.255.255"):
                     self.sock.sendto(struct.pack('!16s20s20s100s',"BehaviorMsg",targetIP,body,behavior),(self.addr,self.SendPort))
+            elif(body == "add"):
+                self.managerProxy.addDefaultBehavior(behavior)
+            elif(body == "remove"):
+                self.managerProxy.removeDefaultBehavior(behavior)
         else:
             pass
     def getString(self,p):
