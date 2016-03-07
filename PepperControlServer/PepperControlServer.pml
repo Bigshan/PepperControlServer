@@ -5,11 +5,14 @@
         <BehaviorDescription name="behavior" src="PepperControlServer" xar="behavior.xar" />
     </BehaviorDescriptions>
     <Dialogs />
-    <Resources />
+    <Resources>
+        <File name="icon" src="icon.png" />
+    </Resources>
     <Topics />
     <IgnoredPaths>
-        <Path src=".metadata" />
-        <Path src="PepperControlServer/.DS_Store" />
         <Path src=".DS_Store" />
+        <Path src="PepperControlServer/.DS_Store" />
+        <Path src="icon.png" />
+        <Path src=".metadata" />
     </IgnoredPaths>
 </Package>
